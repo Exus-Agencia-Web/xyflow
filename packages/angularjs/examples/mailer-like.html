@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>FlowCanvas Mailer-like Demo — AngularJS</title>
+	<link rel="stylesheet" href="../dist/flow-canvas.css">
+	<style>
+		* { box-sizing: border-box; }
+		html, body { margin: 0; height: 100%; font-family: Inter, -apple-system, sans-serif; }
+		
+		#app {
+			height: 100vh;
+			display: flex;
+			background: var(--fc-bg, #fff);
+			color: var(--fc-text, #191e36);
+		}
+
+		/* Canvas area */
+		.canvas-area {
+			flex: 1 1 0;
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+		}
+
+		.canvas-toolbar {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px 16px;
+			background: var(--fc-surface, #fff);
+			border-bottom: 1px solid var(--fc-line, #dfe1e6);
+		}
+
+		.canvas-toolbar h1 {
+			margin: 0;
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.canvas-toolbar .spacer { flex: 1; }
+
+		flow-canvas {
+			flex: 1 1 0;
+			display: block;
+			min-height: 0;
+		}
+
+		/* Inspector panel */
+		.inspector {
+			width: 320px;
+			flex-shrink: 0;
+			background: var(--fc-surface, #fff);
+			border-left: 1px solid var(--fc-line, #dfe1e6);
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		.inspector-header {
+			padding: 16px;
+			border-bottom: 1px solid var(--fc-line, #dfe1e6);
+		}
+
+		.inspector-header h2 {
+			margin: 0 0 4px 0;
+			font-size: 14px;
+			font-weight: 600;
+		}
+
+		.inspector-header .type-badge {
+			display: inline-block;
+			padding: 2px 8px;
+			font-size: 11px;
+			font-weight: 500;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			border-radius: 4px;
+			background: var(--fc-surface-alt, #f7f7f7);
+			color: var(--fc-muted, #bcbdc4);
+		}
+
+		.inspector-body {
+			flex: 1 1 0;
+			padding: 16px;
+			overflow-y: auto;
+		}
+
+		.inspector-empty {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+			color: var(--fc-muted, #bcbdc4);
+			font-size: 13px;
+		}
+
+		/* Form fields */
+		.form-group {
+			margin-bottom: 16px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 6px;
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--fc-text-body, #5e6064);
+		}
+
+		.form-group input,
+		.form-group select,
+		.form-group textarea {
+			width: 100%;
+			padding: 10px 12px;
+			font-size: 13px;
+			border: 1px solid var(--fc-line, #dfe1e6);
+			border-radius: 8px;
+			background: var(--fc-bg, #fff);
+			color: var(--fc-text, #191e36);
+			font-family: inherit;
+		}
+
+		.form-group input:focus,
+		.form-group select:focus,
+		.form-group textarea:focus {
+			outline: none;
+			border-color: var(--fc-primary, #0ec12f);
+			box-shadow: 0 0 0 3px var(--fc-primary-soft, #d6f5db);
+		}
+
+		.form-group textarea {
+			resize: vertical;
+			min-height: 80px;
+		}
+
+		.form-group .hint {
+			margin-top: 4px;
+			font-size: 11px;
+			color: var(--fc-muted, #bcbdc4);
+		}
+
+		/* Inline form row */
+		.form-row {
+			display: flex;
+			gap: 12px;
+		}
+
+		.form-row .form-group {
+			flex: 1;
+		}
+
+		/* Buttons */
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			padding: 10px 16px;
+			font-size: 13px;
+			font-weight: 500;
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			transition: background 0.15s;
+		}
+
+		.btn-primary {
+			background: var(--fc-primary, #0ec12f);
+			color: white;
+		}
+
+		.btn-primary:hover {
+			background: var(--fc-primary-dark, #056d18);
+		}
+
+		.btn-secondary {
+			background: var(--fc-surface-alt, #f7f7f7);
+			color: var(--fc-text, #191e36);
+			border: 1px solid var(--fc-line, #dfe1e6);
+		}
+
+		.btn-secondary:hover {
+			background: var(--fc-line, #dfe1e6);
+		}
+
+		.btn-danger {
+			background: var(--fc-danger, #ef4444);
+			color: white;
+		}
+
+		.inspector-actions {
+			display: flex;
+			gap: 8px;
+			padding: 16px;
+			border-top: 1px solid var(--fc-line, #dfe1e6);
+		}
+
+		.inspector-actions .btn {
+			flex: 1;
+		}
+
+		/* Dark theme */
+		[data-theme="dark"] {
+			--fc-bg: #131729;
+			--fc-surface: #1f2640;
+			--fc-surface-alt: #242b45;
+			--fc-line: #2f364d;
+			--fc-text: #e5e7eb;
+			--fc-text-body: #b9c1d7;
+			--fc-muted: #8892a8;
+		}
+	</style>
+	<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+	<script src="../dist/flow-canvas.umd.cjs"></script>
+</head>
+<body>
+	<div id="app" ng-app="mailerDemo" ng-controller="MailerCtrl as $ctrl" data-theme="light">
+		<!-- Canvas Area -->
+		<div class="canvas-area">
+			<div class="canvas-toolbar">
+				<h1>Email Automation Builder</h1>
+				<span class="spacer"></span>
+				<button class="btn btn-secondary" ng-click="$ctrl.api && $ctrl.api.autoArrange()">Auto Arrange</button>
+				<button class="btn btn-primary" ng-click="$ctrl.save()">Save Workflow</button>
+			</div>
+			<flow-canvas
+				flows="$ctrl.flows"
+				node-types="$ctrl.nodeTypes"
+				direction="horizontal"
+				edge-style="bezier"
+				theme="light"
+				snap-to-grid="true"
+				grid-size="20"
+				on-change="$ctrl.onChange(changes)"
+				on-select="$ctrl.onSelect(id)"
+				on-edit="$ctrl.onEdit(id)"
+				on-ready="$ctrl.onReady(api)">
+			</flow-canvas>
+		</div>
+
+		<!-- Inspector Panel -->
+		<div class="inspector">
+			<!-- Empty state -->
+			<div class="inspector-empty" ng-if="!$ctrl.selectedNode">
+				Select a node to edit its properties
+			</div>
+
+			<!-- Node editing -->
+			<div ng-if="$ctrl.selectedNode">
+				<div class="inspector-header">
+					<h2>{{$ctrl.getTypeDef($ctrl.selectedNode.entity.type).label}}</h2>
+					<span class="type-badge">{{$ctrl.selectedNode.entity.type}}</span>
+				</div>
+
+				<div class="inspector-body">
+					<!-- Email node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'email'">
+						<div class="form-group">
+							<label>Subject Line</label>
+							<input type="text" ng-model="$ctrl.selectedNode.entity.data.subject" placeholder="Enter email subject...">
+						</div>
+						<div class="form-group">
+							<label>Template</label>
+							<select ng-model="$ctrl.selectedNode.entity.data.template">
+								<option value="">Select template...</option>
+								<option value="welcome">Welcome Email</option>
+								<option value="promo">Promotional</option>
+								<option value="reminder">Reminder</option>
+								<option value="newsletter">Newsletter</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label>Preview Text</label>
+							<textarea ng-model="$ctrl.selectedNode.entity.data.preview" placeholder="Preview text shown in inbox..."></textarea>
+						</div>
+					</div>
+
+					<!-- Wait node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'wait'">
+						<div class="form-row">
+							<div class="form-group">
+								<label>Duration</label>
+								<input type="number" ng-model="$ctrl.selectedNode.entity.data.value" min="1">
+							</div>
+							<div class="form-group">
+								<label>Unit</label>
+								<select ng-model="$ctrl.selectedNode.entity.data.unit">
+									<option value="minutes">Minutes</option>
+									<option value="hours">Hours</option>
+									<option value="days">Days</option>
+									<option value="weeks">Weeks</option>
+								</select>
+							</div>
+						</div>
+						<div class="form-group">
+							<label>Skip weekends</label>
+							<select ng-model="$ctrl.selectedNode.entity.data.skipWeekends">
+								<option value="false">No</option>
+								<option value="true">Yes</option>
+							</select>
+							<div class="hint">If enabled, delays won't count weekend days.</div>
+						</div>
+					</div>
+
+					<!-- Condition node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'if'">
+						<div class="form-group">
+							<label>Condition Type</label>
+							<select ng-model="$ctrl.selectedNode.entity.data.conditionType">
+								<option value="">Select condition...</option>
+								<option value="opened">Email Opened</option>
+								<option value="clicked">Link Clicked</option>
+								<option value="tag">Has Tag</option>
+								<option value="field">Field Value</option>
+							</select>
+						</div>
+						<div class="form-group" ng-if="$ctrl.selectedNode.entity.data.conditionType === 'tag'">
+							<label>Tag Name</label>
+							<input type="text" ng-model="$ctrl.selectedNode.entity.data.tagName" placeholder="Enter tag name...">
+						</div>
+						<div class="form-group" ng-if="$ctrl.selectedNode.entity.data.conditionType === 'field'">
+							<label>Field</label>
+							<select ng-model="$ctrl.selectedNode.entity.data.field">
+								<option value="email">Email</option>
+								<option value="name">Name</option>
+								<option value="company">Company</option>
+								<option value="country">Country</option>
+							</select>
+						</div>
+						<div class="form-group" ng-if="$ctrl.selectedNode.entity.data.conditionType === 'field'">
+							<label>Value</label>
+							<input type="text" ng-model="$ctrl.selectedNode.entity.data.fieldValue" placeholder="Enter value...">
+						</div>
+					</div>
+
+					<!-- Tag Add node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'tag_add'">
+						<div class="form-group">
+							<label>Tag to Add</label>
+							<input type="text" ng-model="$ctrl.selectedNode.entity.data.tag" placeholder="Enter tag name...">
+						</div>
+					</div>
+
+					<!-- Tag Remove node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'tag_remove'">
+						<div class="form-group">
+							<label>Tag to Remove</label>
+							<input type="text" ng-model="$ctrl.selectedNode.entity.data.tag" placeholder="Enter tag name...">
+						</div>
+					</div>
+
+					<!-- SMS node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'sms'">
+						<div class="form-group">
+							<label>Message</label>
+							<textarea ng-model="$ctrl.selectedNode.entity.data.message" placeholder="SMS message content..." rows="4"></textarea>
+							<div class="hint">{{($ctrl.selectedNode.entity.data.message || '').length}}/160 characters</div>
+						</div>
+					</div>
+
+					<!-- Webhook node -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'webhook'">
+						<div class="form-group">
+							<label>Webhook URL</label>
+							<input type="url" ng-model="$ctrl.selectedNode.entity.data.url" placeholder="https://...">
+						</div>
+						<div class="form-group">
+							<label>HTTP Method</label>
+							<select ng-model="$ctrl.selectedNode.entity.data.method">
+								<option value="POST">POST</option>
+								<option value="GET">GET</option>
+								<option value="PUT">PUT</option>
+							</select>
+						</div>
+					</div>
+
+					<!-- Start node (read-only) -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'start'">
+						<p style="color: var(--fc-muted); font-size: 13px; margin: 0;">
+							This is the workflow entry point. It cannot be modified or deleted.
+						</p>
+					</div>
+
+					<!-- Exit node (read-only) -->
+					<div ng-if="$ctrl.selectedNode.entity.type === 'exit'">
+						<p style="color: var(--fc-muted); font-size: 13px; margin: 0;">
+							Subscribers reaching this node will exit the automation.
+						</p>
+					</div>
+				</div>
+
+				<!-- Actions -->
+				<div class="inspector-actions" ng-if="!$ctrl.getTypeDef($ctrl.selectedNode.entity.type).locked">
+					<button class="btn btn-secondary" ng-click="$ctrl.duplicateNode()">Duplicate</button>
+					<button class="btn btn-danger" ng-click="$ctrl.deleteNode()">Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		FlowCanvas.initAngular('flowCanvas');
+
+		angular.module('mailerDemo', ['flowCanvas'])
+			.controller('MailerCtrl', ['$scope', function($scope){
+				var $ctrl = this;
+
+				// Node types catalog
+				$ctrl.nodeTypes = [
+					{
+						type: 'start',
+						label: 'Trigger',
+						color: '#22c55e',
+						isInitial: true,
+						locked: true,
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>',
+						inputs: [],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'start', data: { trigger: 'subscribe' } }; },
+						renderSummary: function(n) { return 'When user subscribes'; }
+					},
+					{
+						type: 'email',
+						label: 'Send Email',
+						color: '#6366f1',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'email', data: { subject: '', template: '', preview: '' } }; },
+						renderSummary: function(n) { return n.entity.data.subject || 'No subject'; }
+					},
+					{
+						type: 'sms',
+						label: 'Send SMS',
+						color: '#14b8a6',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'sms', data: { message: '' } }; },
+						renderSummary: function(n) { return n.entity.data.message ? n.entity.data.message.substring(0, 30) + '...' : 'No message'; }
+					},
+					{
+						type: 'wait',
+						label: 'Wait',
+						color: '#f59e0b',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'wait', data: { value: 1, unit: 'days', skipWeekends: 'false' } }; },
+						renderSummary: function(n) { return n.entity.data.value + ' ' + n.entity.data.unit; }
+					},
+					{
+						type: 'if',
+						label: 'Condition',
+						color: '#8b5cf6',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l10 10-10 10L2 12z"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [
+							{ type: 'yes', label: 'Yes' },
+							{ type: 'no', label: 'No' }
+						],
+						createEntity: function() { return { type: 'if', data: { conditionType: '', tagName: '', field: '', fieldValue: '' } }; },
+						renderSummary: function(n) {
+							if (n.entity.data.conditionType === 'tag') return 'Has tag: ' + (n.entity.data.tagName || '?');
+							if (n.entity.data.conditionType === 'opened') return 'Email opened';
+							if (n.entity.data.conditionType === 'clicked') return 'Link clicked';
+							if (n.entity.data.conditionType === 'field') return n.entity.data.field + ' = ' + (n.entity.data.fieldValue || '?');
+							return 'No condition';
+						}
+					},
+					{
+						type: 'tag_add',
+						label: 'Add Tag',
+						color: '#06b6d4',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'tag_add', data: { tag: '' } }; },
+						renderSummary: function(n) { return n.entity.data.tag || 'No tag'; }
+					},
+					{
+						type: 'tag_remove',
+						label: 'Remove Tag',
+						color: '#ec4899',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/><line x1="4" y1="20" x2="20" y2="4" stroke-width="2"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'tag_remove', data: { tag: '' } }; },
+						renderSummary: function(n) { return n.entity.data.tag || 'No tag'; }
+					},
+					{
+						type: 'webhook',
+						label: 'Webhook',
+						color: '#64748b',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'webhook', data: { url: '', method: 'POST' } }; },
+						renderSummary: function(n) { return n.entity.data.url ? 'POST ' + n.entity.data.url.substring(0, 25) : 'No URL'; }
+					},
+					{
+						type: 'exit',
+						label: 'Exit',
+						color: '#ef4444',
+						isTerminal: true,
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [],
+						createEntity: function() { return { type: 'exit', data: {} }; },
+						renderSummary: function() { return 'End automation'; }
+					}
+				];
+
+				// Initialize flows
+				$ctrl.flows = FlowCanvas.createFlows();
+				var startTypeDef = $ctrl.nodeTypes.find(function(t) { return t.type === 'start'; });
+				var startNode = FlowCanvas.createNode(startTypeDef, { id: 'start-1', position: { x: 50, y: 200 } });
+				$ctrl.flows.nodes.set(startNode.id, startNode);
+				$ctrl.flows.roots.push(startNode.id);
+
+				// State
+				$ctrl.api = null;
+				$ctrl.selectedNode = null;
+
+				$ctrl.getTypeDef = function(type) {
+					return $ctrl.nodeTypes.find(function(t) { return t.type === type; }) || {};
+				};
+
+				$ctrl.onReady = function(api) {
+					$ctrl.api = api;
+				};
+
+				$ctrl.onChange = function(changes) {
+					FlowCanvas.applyChanges($ctrl.flows, changes);
+					// Update selectedNode reference if it changed
+					if ($ctrl.selectedNode) {
+						$ctrl.selectedNode = $ctrl.flows.nodes.get($ctrl.selectedNode.id) || null;
+					}
+				};
+
+				$ctrl.onSelect = function(id) {
+					if (id) {
+						$ctrl.selectedNode = $ctrl.flows.nodes.get(id) || null;
+					} else {
+						$ctrl.selectedNode = null;
+					}
+					$scope.$applyAsync();
+				};
+
+				$ctrl.onEdit = function(id) {
+					// Select the node for editing in inspector
+					$ctrl.selectedNode = $ctrl.flows.nodes.get(id) || null;
+					$scope.$applyAsync();
+				};
+
+				$ctrl.deleteNode = function() {
+					if (!$ctrl.selectedNode) return;
+					var changes = [{ type: 'node:delete', id: $ctrl.selectedNode.id }];
+					FlowCanvas.applyChanges($ctrl.flows, changes);
+					$ctrl.selectedNode = null;
+					if ($ctrl.api) $ctrl.api.redraw();
+				};
+
+				$ctrl.duplicateNode = function() {
+					if (!$ctrl.selectedNode) return;
+					var typeDef = $ctrl.getTypeDef($ctrl.selectedNode.entity.type);
+					var newNode = FlowCanvas.createNode(typeDef, {
+						position: {
+							x: $ctrl.selectedNode.position.x + 50,
+							y: $ctrl.selectedNode.position.y + 50
+						}
+					});
+					// Copy entity data
+					newNode.entity.data = JSON.parse(JSON.stringify($ctrl.selectedNode.entity.data));
+					$ctrl.flows.nodes.set(newNode.id, newNode);
+					if ($ctrl.api) $ctrl.api.redraw();
+				};
+
+				$ctrl.save = function() {
+					var data = {
+						nodes: Array.from($ctrl.flows.nodes.values()),
+						edges: Array.from($ctrl.flows.edges.values()),
+						roots: $ctrl.flows.roots
+					};
+					console.log('Workflow saved:', data);
+					alert('Workflow saved! Check console for data.');
+				};
+			}]);
+	</script>
+</body>
+</html>

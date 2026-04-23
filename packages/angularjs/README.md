@@ -2,8 +2,6 @@
 
 AngularJS 1.x wrapper around `@xyflow/react` — Custom Element + directive + catalog-driven node renderer.
 
-> Status: **scaffold / work in progress**. See the implementation spec below for what's still TBD.
-
 ## Install
 
 ```bash

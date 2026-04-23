@@ -57,3 +57,278 @@
 	--fc-shadow-card: 0 1px 3px rgba(0, 0, 0, .2);
 	--fc-shadow-pop:  0 16px 34px rgba(0, 0, 0, .5);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Node Card Styles
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.fc-node-card {
+	background: var(--fc-surface);
+	border: 1px solid var(--fc-line);
+	border-left: 4px solid var(--fc-node-color, var(--fc-primary));
+	border-radius: var(--fc-radius-md);
+	box-shadow: var(--fc-shadow-card);
+	padding: 12px 16px;
+	min-width: 180px;
+	font-family: var(--fc-font);
+	transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.fc-node-card:hover {
+	box-shadow: var(--fc-shadow-pop);
+}
+
+.fc-node-card.fc-selected {
+	border-color: var(--fc-primary);
+	box-shadow: 0 0 0 2px var(--fc-primary-soft), var(--fc-shadow-card);
+}
+
+.fc-node-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.fc-node-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	background: var(--fc-node-color, var(--fc-primary));
+	border-radius: 6px;
+	color: white;
+}
+
+.fc-node-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.fc-node-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--fc-text);
+}
+
+.fc-node-summary {
+	margin-top: 6px;
+	font-size: 12px;
+	color: var(--fc-text-body);
+	line-height: 1.4;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Handles
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.fc-handle {
+	width: 12px !important;
+	height: 12px !important;
+	background: var(--fc-surface) !important;
+	border: 2px solid var(--fc-edge) !important;
+	border-radius: 50% !important;
+	transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.fc-handle:hover {
+	border-color: var(--fc-primary) !important;
+	transform: scale(1.2);
+}
+
+.fc-handle-label {
+	position: absolute;
+	right: 16px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 10px;
+	color: var(--fc-muted);
+	white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Sticky Notes
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.fc-sticky {
+	background: #fef08a;
+	border-radius: var(--fc-radius-md);
+	box-shadow: var(--fc-shadow-card);
+	padding: 16px;
+	min-width: 150px;
+	min-height: 100px;
+	font-family: var(--fc-font);
+	resize: both;
+	overflow: auto;
+}
+
+.fc-sticky.fc-selected {
+	box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2), var(--fc-shadow-card);
+}
+
+.fc-sticky-content {
+	outline: none;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #422006;
+	min-height: 60px;
+}
+
+.fc-sticky-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+}
+
+.fc-sticky-color {
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	background: transparent;
+}
+
+.fc-sticky-color::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.fc-sticky-color::-webkit-color-swatch {
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Palette
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.fc-palette {
+	background: var(--fc-surface);
+	border: 1px solid var(--fc-line);
+	border-radius: var(--fc-radius-lg);
+	box-shadow: var(--fc-shadow-card);
+	padding: 12px;
+	min-width: 180px;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.fc-palette-title {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--fc-muted);
+	margin-bottom: 8px;
+}
+
+.fc-palette-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.fc-palette-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	background: var(--fc-surface-alt);
+	border: 1px solid transparent;
+	border-radius: var(--fc-radius-sm);
+	cursor: grab;
+	transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fc-palette-item:hover {
+	background: var(--fc-surface);
+	border-color: var(--fc-line);
+}
+
+.fc-palette-item:active {
+	cursor: grabbing;
+}
+
+.fc-palette-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	background: var(--fc-node-color, var(--fc-primary));
+	border-radius: 6px;
+	color: white;
+}
+
+.fc-palette-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.fc-palette-label {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--fc-text);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Edge Labels
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.fc-edge-label {
+	font-size: 11px;
+	fill: var(--fc-muted);
+	font-family: var(--fc-font);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ReactFlow Overrides
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.flow-canvas-root .react-flow__edge-path {
+	stroke: var(--fc-edge);
+	stroke-width: 2;
+}
+
+.flow-canvas-root .react-flow__edge.selected .react-flow__edge-path,
+.flow-canvas-root .react-flow__edge:hover .react-flow__edge-path {
+	stroke: var(--fc-primary);
+}
+
+.flow-canvas-root .react-flow__connection-line {
+	stroke: var(--fc-primary);
+	stroke-width: 2;
+}
+
+.flow-canvas-root .react-flow__controls {
+	box-shadow: var(--fc-shadow-card);
+	border-radius: var(--fc-radius-md);
+	border: 1px solid var(--fc-line);
+	overflow: hidden;
+}
+
+.flow-canvas-root .react-flow__controls-button {
+	background: var(--fc-surface);
+	border-bottom: 1px solid var(--fc-line);
+	color: var(--fc-text);
+}
+
+.flow-canvas-root .react-flow__controls-button:hover {
+	background: var(--fc-surface-alt);
+}
+
+.flow-canvas-root .react-flow__controls-button svg {
+	fill: currentColor;
+}
+
+.flow-canvas-root .react-flow__minimap {
+	background: var(--fc-surface);
+	border: 1px solid var(--fc-line);
+	border-radius: var(--fc-radius-md);
+	box-shadow: var(--fc-shadow-card);
+}
+
+.flow-canvas-root .react-flow__attribution {
+	display: none;
+}

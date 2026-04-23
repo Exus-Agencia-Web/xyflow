@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>FlowCanvas Full Demo — AngularJS</title>
+	<link rel="stylesheet" href="../dist/flow-canvas.css">
+	<style>
+		* { box-sizing: border-box; }
+		html, body { margin: 0; height: 100%; font-family: Inter, -apple-system, sans-serif; }
+		
+		#app {
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			background: var(--fc-bg, #fff);
+			color: var(--fc-text, #191e36);
+		}
+
+		.toolbar {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 12px 16px;
+			background: var(--fc-surface, #fff);
+			border-bottom: 1px solid var(--fc-line, #dfe1e6);
+		}
+
+		.toolbar h1 {
+			margin: 0;
+			font-size: 16px;
+			font-weight: 600;
+			flex: 1;
+		}
+
+		.toolbar-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 14px;
+			font-size: 13px;
+			font-weight: 500;
+			border: 1px solid var(--fc-line, #dfe1e6);
+			border-radius: 8px;
+			background: var(--fc-surface, #fff);
+			color: var(--fc-text, #191e36);
+			cursor: pointer;
+			transition: background 0.15s, border-color 0.15s;
+		}
+
+		.toolbar-btn:hover {
+			background: var(--fc-surface-alt, #f7f7f7);
+			border-color: var(--fc-primary, #0ec12f);
+		}
+
+		.toolbar-btn svg {
+			width: 16px;
+			height: 16px;
+		}
+
+		.canvas-wrap {
+			flex: 1 1 0;
+			display: flex;
+			min-height: 0;
+		}
+
+		flow-canvas {
+			flex: 1 1 0;
+			display: block;
+			min-width: 0;
+		}
+
+		/* Dark theme variables */
+		[data-theme="dark"] {
+			--fc-bg: #131729;
+			--fc-surface: #1f2640;
+			--fc-surface-alt: #242b45;
+			--fc-line: #2f364d;
+			--fc-text: #e5e7eb;
+			--fc-muted: #8892a8;
+		}
+
+		[data-theme="dark"] .toolbar {
+			background: var(--fc-surface);
+			border-color: var(--fc-line);
+		}
+
+		[data-theme="dark"] .toolbar-btn {
+			background: var(--fc-surface);
+			color: var(--fc-text);
+			border-color: var(--fc-line);
+		}
+
+		[data-theme="dark"] .toolbar-btn:hover {
+			background: var(--fc-surface-alt);
+		}
+
+		/* Toast notification */
+		.toast {
+			position: fixed;
+			bottom: 20px;
+			right: 20px;
+			padding: 12px 20px;
+			background: var(--fc-primary, #0ec12f);
+			color: white;
+			border-radius: 8px;
+			font-size: 13px;
+			font-weight: 500;
+			opacity: 0;
+			transform: translateY(10px);
+			transition: opacity 0.3s, transform 0.3s;
+			pointer-events: none;
+			z-index: 1000;
+		}
+
+		.toast.show {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	</style>
+	<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+	<script src="../dist/flow-canvas.umd.cjs"></script>
+</head>
+<body>
+	<div id="app" ng-app="fullDemo" ng-controller="EditorCtrl as $ctrl" data-theme="{{$ctrl.theme}}">
+		<!-- Toolbar -->
+		<div class="toolbar">
+			<h1>FlowCanvas Full Demo</h1>
+
+			<button class="toolbar-btn" ng-click="$ctrl.toggleTheme()" title="Toggle theme">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<circle cx="12" cy="12" r="5"/>
+					<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+				</svg>
+				{{$ctrl.theme === 'light' ? 'Dark' : 'Light'}}
+			</button>
+
+			<button class="toolbar-btn" ng-click="$ctrl.autoArrange()" title="Auto-arrange nodes">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<rect x="3" y="3" width="7" height="7"/>
+					<rect x="14" y="3" width="7" height="7"/>
+					<rect x="14" y="14" width="7" height="7"/>
+					<rect x="3" y="14" width="7" height="7"/>
+				</svg>
+				Arrange
+			</button>
+
+			<button class="toolbar-btn" ng-click="$ctrl.save()" title="Save to localStorage">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+					<polyline points="17 21 17 13 7 13 7 21"/>
+					<polyline points="7 3 7 8 15 8"/>
+				</svg>
+				Save
+			</button>
+
+			<button class="toolbar-btn" ng-click="$ctrl.toggleFullscreen()" title="Toggle fullscreen">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+				</svg>
+				Fullscreen
+			</button>
+		</div>
+
+		<!-- Canvas -->
+		<div class="canvas-wrap">
+			<flow-canvas
+				flows="$ctrl.flows"
+				node-types="$ctrl.nodeTypes"
+				direction="horizontal"
+				edge-style="bezier"
+				theme="{{$ctrl.theme}}"
+				snap-to-grid="true"
+				grid-size="20"
+				on-change="$ctrl.onChange(changes)"
+				on-select="$ctrl.onSelect(id)"
+				on-edit="$ctrl.onEdit(id)"
+				on-ready="$ctrl.onReady(api)">
+			</flow-canvas>
+		</div>
+
+		<!-- Toast -->
+		<div class="toast" ng-class="{ show: $ctrl.toastVisible }">{{$ctrl.toastMessage}}</div>
+	</div>
+
+	<script>
+		FlowCanvas.initAngular('flowCanvas');
+
+		angular.module('fullDemo', ['flowCanvas'])
+			.controller('EditorCtrl', ['$scope', '$timeout', function($scope, $timeout){
+				var $ctrl = this;
+
+				// Theme state
+				$ctrl.theme = 'light';
+				$ctrl.toggleTheme = function() {
+					$ctrl.theme = $ctrl.theme === 'light' ? 'dark' : 'light';
+				};
+
+				// Toast
+				$ctrl.toastVisible = false;
+				$ctrl.toastMessage = '';
+				$ctrl.showToast = function(msg) {
+					$ctrl.toastMessage = msg;
+					$ctrl.toastVisible = true;
+					$timeout(function() {
+						$ctrl.toastVisible = false;
+					}, 2500);
+				};
+
+				// 8 Node Types as per requirements
+				$ctrl.nodeTypes = [
+					// 1. Start (initial, locked)
+					{
+						type: 'start',
+						label: 'Start',
+						color: '#22c55e',
+						isInitial: true,
+						locked: true,
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor"/></svg>',
+						inputs: [],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'start', data: {} }; },
+						renderSummary: function() { return 'Workflow entry point'; }
+					},
+					// 2. Action (email-like)
+					{
+						type: 'action',
+						label: 'Send Email',
+						color: '#6366f1',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'action', data: { template: '', subject: '' } }; },
+						renderSummary: function(n) { return n.entity.data.subject || 'No subject set'; }
+					},
+					// 3. Wait/Delay
+					{
+						type: 'wait',
+						label: 'Wait',
+						color: '#f59e0b',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'wait', data: { value: 1, unit: 'days' } }; },
+						renderSummary: function(n) { return n.entity.data.value + ' ' + n.entity.data.unit; }
+					},
+					// 4. Tag Add
+					{
+						type: 'tag_add',
+						label: 'Add Tag',
+						color: '#06b6d4',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'tag_add', data: { tag: '' } }; },
+						renderSummary: function(n) { return n.entity.data.tag || 'No tag'; }
+					},
+					// 5. Tag Remove
+					{
+						type: 'tag_remove',
+						label: 'Remove Tag',
+						color: '#ec4899',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1" fill="currentColor"/><line x1="4" y1="20" x2="20" y2="4" stroke-width="2"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [{ type: 'main' }],
+						createEntity: function() { return { type: 'tag_remove', data: { tag: '' } }; },
+						renderSummary: function(n) { return n.entity.data.tag || 'No tag'; }
+					},
+					// 6. Exit
+					{
+						type: 'exit',
+						label: 'Exit',
+						color: '#ef4444',
+						isTerminal: true,
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6" fill="currentColor"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [],
+						createEntity: function() { return { type: 'exit', data: {} }; },
+						renderSummary: function() { return 'End workflow'; }
+					},
+					// 7. If/Condition (yes/no outputs)
+					{
+						type: 'if',
+						label: 'Condition',
+						color: '#8b5cf6',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l10 10-10 10L2 12z"/></svg>',
+						inputs: [{ type: 'main' }],
+						outputs: [
+							{ type: 'yes', label: 'Yes' },
+							{ type: 'no', label: 'No' }
+						],
+						createEntity: function() { return { type: 'if', data: { condition: '' } }; },
+						renderSummary: function(n) { return n.entity.data.condition || 'No condition'; }
+					},
+					// 8. Sticky note
+					{
+						type: 'sticky',
+						label: 'Note',
+						color: '#fef08a',
+						isSticky: true,
+						isResizable: true,
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>',
+						inputs: [],
+						outputs: [],
+						defaultSize: { w: 200, h: 150 },
+						createEntity: function() { return { type: 'sticky', data: { content: '', color: '#fef08a' } }; },
+						renderSummary: function() { return ''; }
+					}
+				];
+
+				// Load from localStorage or create fresh
+				var saved = localStorage.getItem('flowcanvas_full_demo');
+				if (saved) {
+					try {
+						var parsed = JSON.parse(saved);
+						$ctrl.flows = FlowCanvas.createFlows();
+						// Restore nodes
+						if (parsed.nodes) {
+							parsed.nodes.forEach(function(n) {
+								$ctrl.flows.nodes.set(n.id, n);
+							});
+						}
+						// Restore edges
+						if (parsed.edges) {
+							parsed.edges.forEach(function(e) {
+								$ctrl.flows.edges.set(e.id, e);
+							});
+						}
+						// Restore roots
+						if (parsed.roots) {
+							$ctrl.flows.roots = parsed.roots;
+						}
+					} catch (e) {
+						console.warn('Failed to parse saved flows:', e);
+						$ctrl.flows = FlowCanvas.createFlows();
+					}
+				} else {
+					$ctrl.flows = FlowCanvas.createFlows();
+				}
+
+				// If empty, add initial start node
+				if ($ctrl.flows.nodes.size === 0) {
+					var startTypeDef = $ctrl.nodeTypes.find(function(t) { return t.type === 'start'; });
+					var startNode = FlowCanvas.createNode(startTypeDef, { id: 'start-1', position: { x: 50, y: 150 } });
+					$ctrl.flows.nodes.set(startNode.id, startNode);
+					$ctrl.flows.roots.push(startNode.id);
+				}
+
+				// API reference
+				$ctrl.api = null;
+				$ctrl.selected = null;
+
+				$ctrl.onReady = function(api) {
+					$ctrl.api = api;
+					console.log('FlowCanvas ready:', api);
+				};
+
+				$ctrl.onChange = function(changes) {
+					FlowCanvas.applyChanges($ctrl.flows, changes);
+					console.log('Changes:', changes);
+				};
+
+				$ctrl.onSelect = function(id) {
+					$ctrl.selected = id;
+					console.log('Selected:', id);
+				};
+
+				$ctrl.onEdit = function(id) {
+					console.log('onEdit:', id);
+					var node = $ctrl.flows.nodes.get(id);
+					if (node) {
+						alert('Edit node: ' + node.entity.type + ' (' + id + ')');
+					}
+				};
+
+				$ctrl.autoArrange = function() {
+					if ($ctrl.api) {
+						$ctrl.api.autoArrange();
+						$ctrl.showToast('Nodes arranged');
+					}
+				};
+
+				$ctrl.save = function() {
+					var data = {
+						nodes: Array.from($ctrl.flows.nodes.values()),
+						edges: Array.from($ctrl.flows.edges.values()),
+						roots: $ctrl.flows.roots
+					};
+					localStorage.setItem('flowcanvas_full_demo', JSON.stringify(data));
+					$ctrl.showToast('Saved to localStorage');
+				};
+
+				$ctrl.toggleFullscreen = function() {
+					if ($ctrl.api) {
+						$ctrl.api.toggleFullscreen(document.getElementById('app'));
+					}
+				};
+			}]);
+	</script>
+</body>
+</html>
