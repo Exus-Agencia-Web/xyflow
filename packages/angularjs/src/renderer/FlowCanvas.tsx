@@ -524,12 +524,12 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 	}, []);
 
 	// Handle double-click on node
-	const handleNodeDoubleClick = React.useCallback((_event: React.MouseEvent, node: Node<NodeCardData<TData>>) => {
+	const handleNodeDoubleClick = React.useCallback((_event: React.MouseEvent, node: Node) => {
 		if (onEdit) onEdit(node.id);
 	}, [onEdit]);
 
 	// Handle click for selection
-	const handleNodeClick = React.useCallback((_event: React.MouseEvent, node: Node<NodeCardData<TData>>) => {
+	const handleNodeClick = React.useCallback((_event: React.MouseEvent, node: Node) => {
 		if (onSelect) onSelect(node.id);
 	}, [onSelect]);
 
@@ -543,9 +543,9 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (readOnly) return;
 			if (e.key === 'Delete' || e.key === 'Backspace') {
-				const selectedNodes = nodes.filter((n: Node<NodeCardData<TData>>) => n.selected);
+				const selectedNodes = nodes.filter((n) => n.selected);
 				if (selectedNodes.length > 0) {
-					const changes: FlowChange<TData>[] = selectedNodes.map((n: Node<NodeCardData<TData>>) => ({
+					const changes: FlowChange<TData>[] = selectedNodes.map((n) => ({
 						type: 'node:delete' as const,
 						id: n.id
 					}));
@@ -652,17 +652,17 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 				el.requestFullscreen();
 			}
 		},
-		getSelectedIds: () => nodes.filter((n: Node<NodeCardData<TData>>) => n.selected).map((n: Node<NodeCardData<TData>>) => n.id),
+		getSelectedIds: () => nodes.filter((n) => n.selected).map((n) => n.id),
 		selectNode: (id) => {
-			setNodes((ns: Node<NodeCardData<TData>>[]) => ns.map((n: Node<NodeCardData<TData>>) => ({ ...n, selected: n.id === id })));
+			setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === id })));
 			if (onSelect) onSelect(id);
 		},
 		clearSelection: () => {
-			setNodes((ns: Node<NodeCardData<TData>>[]) => ns.map((n: Node<NodeCardData<TData>>) => ({ ...n, selected: false })));
+			setNodes((ns) => ns.map((n) => ({ ...n, selected: false })));
 			if (onSelect) onSelect(null);
 		},
 		focusNode: (id) => {
-			const node = nodes.find((n: Node<NodeCardData<TData>>) => n.id === id);
+			const node = nodes.find((n) => n.id === id);
 			if (node) {
 				reactFlow.setCenter(node.position.x, node.position.y, { zoom: 1, duration: 300 });
 			}
