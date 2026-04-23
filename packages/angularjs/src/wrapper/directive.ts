@@ -34,15 +34,20 @@ interface IScope {
 	snapToGrid?: string;
 	gridSize?: string;
 	readOnly?: string;
+	paletteTitle?: string;
 	onChange?: (args: { changes: unknown[] }) => void;
 	onSelect?: (args: { id: string | null }) => void;
 	onEdit?: (args: { id: string }) => void;
-	onDropEmpty?: (args: { args: { sourceId: string; x: number; y: number; type?: string } }) => void;
+	onDropEmpty?: (args: { args: { sourceId: string; sourceHandle?: string; x: number; y: number; screenX: number; screenY: number; type?: string } }) => void;
 	onReady?: (args: { api: unknown }) => void;
+	onNodeContextMenu?: (args: { args: { id: string; x: number; y: number } }) => void;
+	onEdgeContextMenu?: (args: { args: { id: string; x: number; y: number } }) => void;
+	onPaneContextMenu?: (args: { args: { x: number; y: number } }) => void;
 	isValidConnection?: (args: { args: IsValidConnectionArgs }) => boolean;
 	$watch: (expr: string, fn: (newVal: unknown, oldVal: unknown) => void, deep?: boolean) => () => void;
 	$watchGroup: (exprs: string[], fn: (newVals: unknown[], oldVals: unknown[]) => void) => () => void;
 	$on: (event: string, fn: () => void) => () => void;
+	$applyAsync: (fn?: () => void) => void;
 }
 
 declare const angular: {
@@ -60,20 +65,24 @@ export function registerDirective(moduleName = 'flowCanvas'): void {
 		return {
 			restrict: 'E',
 			scope: {
-				flows:             '=',
-				nodeTypes:         '=',
-				direction:         '@',
-				edgeStyle:         '@',
-				theme:             '@',
-				snapToGrid:        '@',
-				gridSize:          '@',
-				readOnly:          '@',
-				onChange:          '&',
-				onSelect:          '&',
-				onEdit:            '&',
-				onDropEmpty:       '&',
-				onReady:           '&',
-				isValidConnection: '&'
+				flows:              '=',
+				nodeTypes:          '=',
+				direction:          '@',
+				edgeStyle:          '@',
+				theme:              '@',
+				snapToGrid:         '@',
+				gridSize:           '@',
+				readOnly:           '@',
+				paletteTitle:       '@',
+				onChange:           '&',
+				onSelect:           '&',
+				onEdit:             '&',
+				onDropEmpty:        '&',
+				onReady:            '&',
+				onNodeContextMenu:  '&',
+				onEdgeContextMenu:  '&',
+				onPaneContextMenu:  '&',
+				isValidConnection:  '&'
 			},
 			link: function link(scope: IScope, element: unknown[]) {
 				const host = element[0] as HTMLElement;
@@ -102,28 +111,63 @@ export function registerDirective(moduleName = 'flowCanvas'): void {
 
 					if (scope.readOnly === 'true') ce.setAttribute('read-only', 'true');
 					else ce.removeAttribute('read-only');
+
+					if (scope.paletteTitle) ce.setAttribute('palette-title', scope.paletteTitle);
+					else ce.removeAttribute('palette-title');
 				};
 
-				// Wire callbacks to CE
+				// Wire callbacks to CE.
+				// xyflow (React) fires these outside AngularJS' digest cycle, so
+				// mutations in the host scope (e.g. `selectedId`, `dirty`) won't
+				// reflect in the DOM — `ng-if`/`ng-model` re-evaluate only during
+				// a digest. Wrap every emit in `$applyAsync` so Angular schedules
+				// a digest without double-running if one is already in progress.
 				ce.onChange((changes) => {
-					if (scope.onChange) scope.onChange({ changes });
+					scope.$applyAsync(() => {
+						if (scope.onChange) scope.onChange({ changes });
+					});
 				});
 
 				ce.onSelect((id) => {
-					if (scope.onSelect) scope.onSelect({ id });
+					scope.$applyAsync(() => {
+						if (scope.onSelect) scope.onSelect({ id });
+					});
 				});
 
 				ce.onEdit((id) => {
-					if (scope.onEdit) scope.onEdit({ id });
+					scope.$applyAsync(() => {
+						if (scope.onEdit) scope.onEdit({ id });
+					});
 				});
 
 				ce.onReady((api) => {
-					if (scope.onReady) scope.onReady({ api });
+					scope.$applyAsync(() => {
+						if (scope.onReady) scope.onReady({ api });
+					});
 				});
 
 				// Wire onDropEmpty
 				ce.setOnDropEmpty((args) => {
-					if (scope.onDropEmpty) scope.onDropEmpty({ args });
+					scope.$applyAsync(() => {
+						if (scope.onDropEmpty) scope.onDropEmpty({ args });
+					});
+				});
+
+				// Wire context menu callbacks (right-click on node / edge / pane)
+				ce.setOnNodeContextMenu((args) => {
+					scope.$applyAsync(() => {
+						if (scope.onNodeContextMenu) scope.onNodeContextMenu({ args });
+					});
+				});
+				ce.setOnEdgeContextMenu((args) => {
+					scope.$applyAsync(() => {
+						if (scope.onEdgeContextMenu) scope.onEdgeContextMenu({ args });
+					});
+				});
+				ce.setOnPaneContextMenu((args) => {
+					scope.$applyAsync(() => {
+						if (scope.onPaneContextMenu) scope.onPaneContextMenu({ args });
+					});
 				});
 
 				// Wire isValidConnection
@@ -150,7 +194,7 @@ export function registerDirective(moduleName = 'flowCanvas'): void {
 
 				// Watch group for scalar attributes
 				scope.$watchGroup(
-					['direction', 'edgeStyle', 'theme', 'snapToGrid', 'gridSize', 'readOnly'],
+					['direction', 'edgeStyle', 'theme', 'snapToGrid', 'gridSize', 'readOnly', 'paletteTitle'],
 					() => {
 						syncScalarAttrs();
 					}

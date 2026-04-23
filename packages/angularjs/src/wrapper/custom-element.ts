@@ -6,6 +6,7 @@ import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { FlowCanvas } from '../renderer/FlowCanvas';
 import type { Flows, NodeTypeDef, FlowCanvasApi, IsValidConnection } from '../core';
+import type { ContextMenuArgs } from '../renderer/FlowCanvas';
 
 const TAG = 'xyflow-canvas';
 
@@ -18,6 +19,7 @@ interface CanvasState {
 	snapToGrid?: boolean;
 	gridSize?: number;
 	readOnly?: boolean;
+	paletteTitle?: string;
 }
 
 export class FlowCanvasElement extends HTMLElement {
@@ -31,11 +33,14 @@ export class FlowCanvasElement extends HTMLElement {
 	private onSelectCb: ((id: string | null) => void) | null = null;
 	private onEditCb: ((id: string) => void) | null = null;
 	private onReadyCb: ((api: FlowCanvasApi<unknown>) => void) | null = null;
-	private onDropEmptyCb: ((args: { sourceId: string; x: number; y: number; type?: string }) => void) | null = null;
+	private onDropEmptyCb: ((args: { sourceId: string; sourceHandle?: string; x: number; y: number; screenX: number; screenY: number; type?: string }) => void) | null = null;
+	private onNodeContextMenuCb: ((args: ContextMenuArgs & { id: string }) => void) | null = null;
+	private onEdgeContextMenuCb: ((args: ContextMenuArgs & { id: string }) => void) | null = null;
+	private onPaneContextMenuCb: ((args: ContextMenuArgs) => void) | null = null;
 	private isValidConnectionFn: IsValidConnection | null = null;
 
 	static get observedAttributes(): string[] {
-		return ['direction', 'edge-style', 'theme', 'snap-to-grid', 'grid-size', 'read-only'];
+		return ['direction', 'edge-style', 'theme', 'snap-to-grid', 'grid-size', 'read-only', 'palette-title'];
 	}
 
 	connectedCallback(): void {
@@ -89,6 +94,9 @@ export class FlowCanvasElement extends HTMLElement {
 			case 'read-only':
 				this.state.readOnly = value !== null && value !== 'false';
 				break;
+			case 'palette-title':
+				this.state.paletteTitle = value ?? undefined;
+				break;
 		}
 		this.render();
 	}
@@ -130,13 +138,28 @@ export class FlowCanvasElement extends HTMLElement {
 	}
 
 	// New setters per spec
-	setOnDropEmpty(cb: (args: { sourceId: string; x: number; y: number; type?: string }) => void): void {
+	setOnDropEmpty(cb: (args: { sourceId: string; sourceHandle?: string; x: number; y: number; screenX: number; screenY: number; type?: string }) => void): void {
 		this.onDropEmptyCb = cb;
 		this.render();
 	}
 
 	setIsValidConnection(fn: IsValidConnection): void {
 		this.isValidConnectionFn = fn;
+		this.render();
+	}
+
+	setOnNodeContextMenu(cb: (args: ContextMenuArgs & { id: string }) => void): void {
+		this.onNodeContextMenuCb = cb;
+		this.render();
+	}
+
+	setOnEdgeContextMenu(cb: (args: ContextMenuArgs & { id: string }) => void): void {
+		this.onEdgeContextMenuCb = cb;
+		this.render();
+	}
+
+	setOnPaneContextMenu(cb: (args: ContextMenuArgs) => void): void {
+		this.onPaneContextMenuCb = cb;
 		this.render();
 	}
 
@@ -154,10 +177,22 @@ export class FlowCanvasElement extends HTMLElement {
 
 	private render(): void {
 		if (!this.root) return;
+		// React's `FlowCanvas` uses `useMemo`/`useEffect` keyed on the `flows`
+		// reference to decide whether to re-run `flowsToReactFlow`. Host code
+		// tends to mutate the `flows` Map in place (applyChanges) and call
+		// setFlows with the same reference — that produces no diff and React
+		// keeps showing stale data. We emit a shallow clone for the render so
+		// every setFlows forces a reconciliation without pushing a new ref
+		// back to the host (which would trigger AngularJS digest loops).
+		const flowsForRender = this.state.flows ? {
+			nodes: new Map(this.state.flows.nodes),
+			edges: new Map(this.state.flows.edges),
+			roots: [...this.state.flows.roots]
+		} : undefined;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		this.root.render(
 			React.createElement(FlowCanvas as any, {
-				flows: this.state.flows,
+				flows: flowsForRender,
 				nodeTypes: this.state.nodeTypes || [],
 				direction: this.state.direction,
 				edgeStyle: this.state.edgeStyle,
@@ -165,11 +200,15 @@ export class FlowCanvasElement extends HTMLElement {
 				snapToGrid: this.state.snapToGrid,
 				gridSize: this.state.gridSize,
 				readOnly: this.state.readOnly,
+				paletteTitle: this.state.paletteTitle,
 				onChange: this.onChangeCb,
 				onSelect: this.onSelectCb,
 				onEdit: this.onEditCb,
 				onReady: this.handleReady,
 				onDropEmpty: this.onDropEmptyCb,
+				onNodeContextMenu: this.onNodeContextMenuCb,
+				onEdgeContextMenu: this.onEdgeContextMenuCb,
+				onPaneContextMenu: this.onPaneContextMenuCb,
 				isValidConnection: this.isValidConnectionFn
 			})
 		);

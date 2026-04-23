@@ -32,7 +32,7 @@ export function createNode<T = unknown>(
 		id: init?.id || generateId('node'),
 		entity: entity as FlowNode<T>['entity'],
 		position: init?.position ? { ...init.position } : { x: 0, y: 0 },
-		size: init?.size ? { ...init.size } : typeDef.defaultSize || { w: 240, h: 88 }
+		size: init?.size ? { ...init.size } : typeDef.defaultSize || { w: 260, h: 110 }
 	};
 }
 
@@ -68,7 +68,7 @@ export function applyChanges<T = unknown>(
 					id: ch.id,
 					entity: ch.entity as FlowNode<T>['entity'],
 					position: ch.position,
-					size: ch.size || { w: 240, h: 88 }
+					size: ch.size || { w: 260, h: 110 }
 				};
 				flows.nodes.set(n.id, n);
 				if (!ch.parentId) flows.roots.push(n.id);

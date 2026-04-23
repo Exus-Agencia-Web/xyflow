@@ -115,11 +115,19 @@
 
 .xy-flow .xy-flow__edges {
   position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
 
   svg {
     overflow: visible;
     position: absolute;
     pointer-events: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
   }
 }
 

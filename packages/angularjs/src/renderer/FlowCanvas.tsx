@@ -49,6 +49,12 @@ import { generateId, cloneFlows, autoLayout } from '../core';
    Types
    ───────────────────────────────────────────────────────────────────────────── */
 
+export interface ContextMenuArgs {
+	id?: string;
+	x: number;
+	y: number;
+}
+
 export interface FlowCanvasProps<TData = unknown> {
 	flows: Flows<TData>;
 	nodeTypes: NodeTypeDef<TData>[];
@@ -58,12 +64,17 @@ export interface FlowCanvasProps<TData = unknown> {
 	snapToGrid?: boolean;
 	gridSize?: number;
 	readOnly?: boolean;
+	/** Text rendered at the top of the palette panel. Defaults to 'Components'. */
+	paletteTitle?: string;
 	onChange?: (changes: FlowChange<TData>[]) => void;
 	onSelect?: (id: string | null) => void;
 	onEdit?: (id: string) => void;
-	onDropEmpty?: (args: { sourceId: string; x: number; y: number; type?: string }) => void;
+	onDropEmpty?: (args: { sourceId: string; sourceHandle?: string; x: number; y: number; screenX: number; screenY: number; type?: string }) => void;
 	isValidConnection?: IsValidConnection;
 	onReady?: (api: FlowCanvasApi<TData>) => void;
+	onNodeContextMenu?: (args: ContextMenuArgs & { id: string }) => void;
+	onEdgeContextMenu?: (args: ContextMenuArgs & { id: string }) => void;
+	onPaneContextMenu?: (args: ContextMenuArgs) => void;
 }
 
 interface NodeCardData<TData = unknown> {
@@ -86,7 +97,7 @@ interface NodeCardData<TData = unknown> {
 function flowsToReactFlow<TData>(
 	flows: Flows<TData>,
 	nodeTypeDefs: NodeTypeDef<TData>[],
-	_direction: Direction
+	direction: Direction
 ): { nodes: Node<NodeCardData<TData>>[]; edges: Edge[] } {
 	const typeMap = new Map(nodeTypeDefs.map(t => [t.type, t]));
 	const nodes: Node<NodeCardData<TData>>[] = [];
@@ -108,7 +119,8 @@ function flowsToReactFlow<TData>(
 				flowNode: fn,
 				isSticky: typeDef?.isSticky,
 				stickyContent: (fn.entity.data as Record<string, unknown>)?.content as string,
-				stickyColor: (fn.entity.data as Record<string, unknown>)?.color as string
+				stickyColor: (fn.entity.data as Record<string, unknown>)?.color as string,
+				direction
 			},
 			width: fn.size.w,
 			height: fn.size.h,
@@ -143,6 +155,19 @@ function NodeCard<TData>({ data, selected }: NodeProps<Node<NodeCardData<TData>>
 	const outputs = typeDef?.outputs ?? [{ type: 'main' }];
 	const isHorizontal = direction === 'horizontal';
 
+	// Spread N handles evenly along the edge they hang from. `top:%` works when
+	// the handle is anchored to a vertical edge (Left/Right), `left:%` when
+	// anchored to a horizontal one (Top/Bottom). Using the wrong axis pushed
+	// multi-output handles into the card body (the "if" node bug).
+	const spreadStyle = (count: number, index: number, pos: Position): React.CSSProperties | undefined => {
+		if (count <= 1) return undefined;
+		const percent = `${((index + 1) / (count + 1)) * 100}%`;
+		return pos === Position.Top || pos === Position.Bottom ? { left: percent } : { top: percent };
+	};
+
+	const inputPos = isHorizontal ? Position.Left : Position.Top;
+	const outputPos = isHorizontal ? Position.Right : Position.Bottom;
+
 	return (
 		<div
 			className={`fc-node-card${selected ? ' fc-selected' : ''}`}
@@ -153,10 +178,10 @@ function NodeCard<TData>({ data, selected }: NodeProps<Node<NodeCardData<TData>>
 				<Handle
 					key={`in-${inp.type}-${i}`}
 					type="target"
-					position={isHorizontal ? Position.Left : Position.Top}
+					position={inputPos}
 					id={`${inp.type}-in`}
 					className="fc-handle fc-handle-in"
-					style={inputs.length > 1 ? { top: `${((i + 1) / (inputs.length + 1)) * 100}%` } : undefined}
+					style={spreadStyle(inputs.length, i, inputPos)}
 				/>
 			))}
 
@@ -177,10 +202,10 @@ function NodeCard<TData>({ data, selected }: NodeProps<Node<NodeCardData<TData>>
 				<Handle
 					key={`out-${out.type}-${i}`}
 					type="source"
-					position={isHorizontal ? Position.Right : Position.Bottom}
+					position={outputPos}
 					id={`${out.type}-out`}
-					className="fc-handle fc-handle-out"
-					style={outputs.length > 1 ? { top: `${((i + 1) / (outputs.length + 1)) * 100}%` } : undefined}
+					className={`fc-handle fc-handle-out fc-handle-${outputPos}`}
+					style={spreadStyle(outputs.length, i, outputPos)}
 				>
 					{outputs.length > 1 && out.label && (
 						<span className="fc-handle-label">{out.label}</span>
@@ -247,14 +272,15 @@ function StickyNode<TData>({ data, selected }: NodeProps<Node<NodeCardData<TData
 interface PaletteProps<TData> {
 	nodeTypes: NodeTypeDef<TData>[];
 	onDragStart: (typeDef: NodeTypeDef<TData>) => void;
+	title?: string;
 }
 
-function Palette<TData>({ nodeTypes, onDragStart }: PaletteProps<TData>): React.ReactElement {
+function Palette<TData>({ nodeTypes, onDragStart, title }: PaletteProps<TData>): React.ReactElement {
 	const draggableTypes = nodeTypes.filter(t => !t.isInitial);
 
 	return (
 		<div className="fc-palette">
-			<div className="fc-palette-title">Components</div>
+			<div className="fc-palette-title">{title ?? 'Components'}</div>
 			<div className="fc-palette-list">
 				{draggableTypes.map((typeDef) => (
 					<div
@@ -332,6 +358,10 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 		snapToGrid = false,
 		gridSize = 20,
 		readOnly = false,
+		paletteTitle,
+		onNodeContextMenu,
+		onEdgeContextMenu,
+		onPaneContextMenu,
 		onChange,
 		onSelect,
 		onEdit,
@@ -486,12 +516,35 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 			const position = reactFlow.screenToFlowPosition({ x: clientX, y: clientY });
 			onDropEmpty({
 				sourceId: connectingRef.current.sourceId,
+				sourceHandle: connectingRef.current.sourceHandle,
 				x: position.x,
-				y: position.y
+				y: position.y,
+				screenX: clientX,
+				screenY: clientY
 			});
 		}
 		connectingRef.current = null;
 	}, [onDropEmpty, reactFlow]);
+
+	// Context menu wiring — suprimir menú nativo del browser y propagar
+	// coordenadas de pantalla al host para que posicione su menú.
+	const handleNodeContextMenu = React.useCallback((event: React.MouseEvent, node: Node) => {
+		if (!onNodeContextMenu) return;
+		event.preventDefault();
+		onNodeContextMenu({ id: node.id, x: event.clientX, y: event.clientY });
+	}, [onNodeContextMenu]);
+
+	const handleEdgeContextMenu = React.useCallback((event: React.MouseEvent, edge: Edge) => {
+		if (!onEdgeContextMenu) return;
+		event.preventDefault();
+		onEdgeContextMenu({ id: edge.id, x: event.clientX, y: event.clientY });
+	}, [onEdgeContextMenu]);
+
+	const handlePaneContextMenu = React.useCallback((event: React.MouseEvent | MouseEvent) => {
+		if (!onPaneContextMenu) return;
+		event.preventDefault();
+		onPaneContextMenu({ x: event.clientX, y: event.clientY });
+	}, [onPaneContextMenu]);
 
 	// Handle drop from palette
 	const handleDrop = React.useCallback((event: React.DragEvent) => {
@@ -512,7 +565,7 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 			id: nodeId,
 			entity: entity as FlowNode<TData>['entity'],
 			position: { x: position.x, y: position.y },
-			size: typeDef.defaultSize ?? { w: 240, h: 88 }
+			size: typeDef.defaultSize ?? { w: 260, h: 110 }
 		};
 		emitChanges([change]);
 		pushHistory();
@@ -717,6 +770,9 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 				onConnectEnd={handleConnectEnd}
 				onNodeDoubleClick={handleNodeDoubleClick}
 				onNodeClick={handleNodeClick}
+				onNodeContextMenu={handleNodeContextMenu}
+				onEdgeContextMenu={handleEdgeContextMenu}
+				onPaneContextMenu={handlePaneContextMenu}
 				onPaneClick={handlePaneClick}
 				onDrop={handleDrop}
 				onDragOver={handleDragOver}
@@ -747,6 +803,7 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 						<Palette
 							nodeTypes={nodeTypeDefs}
 							onDragStart={(t) => { draggingTypeRef.current = t; }}
+							title={paletteTitle}
 						/>
 					</Panel>
 				)}
