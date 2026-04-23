@@ -77,7 +77,10 @@ export function registerDirective(moduleName = 'flowCanvas'): void {
 			},
 			link: function link(scope: IScope, element: unknown[]) {
 				const host = element[0] as HTMLElement;
-				const ce = document.createElement('flow-canvas') as FlowCanvasElement;
+				const ce = document.createElement('xyflow-canvas') as FlowCanvasElement;
+				ce.style.display = 'block';
+				ce.style.width = '100%';
+				ce.style.height = '100%';
 				host.appendChild(ce);
 
 				// Sync attributes to CE

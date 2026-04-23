@@ -20,7 +20,16 @@ const sharedPlugins = [
 			'process.env.NODE_ENV': JSON.stringify('production')
 		}
 	}),
-	resolve({ browser: true, extensions: ['.ts', '.tsx', '.js', '.jsx'] }),
+	resolve({
+		browser: true,
+		extensions: ['.ts', '.tsx', '.js', '.jsx'],
+		preferBuiltins: false,
+		// CRITICAL: without dedupe, rollup bundles two React instances
+		// (ours + @xyflow/react's transitive) → useState hook dispatcher null.
+		// Do NOT include 'scheduler' here — it isn't hoisted like React is,
+		// and dedupe leaves it unresolved which ships a broken external require.
+		dedupe: ['react', 'react-dom', 'react-dom/client']
+	}),
 	commonjs(),
 	typescript({
 		tsconfig: './tsconfig.json',

@@ -7,7 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { FlowCanvas } from '../renderer/FlowCanvas';
 import type { Flows, NodeTypeDef, FlowCanvasApi, IsValidConnection } from '../core';
 
-const TAG = 'flow-canvas';
+const TAG = 'xyflow-canvas';
 
 interface CanvasState {
 	flows?: Flows<unknown>;
