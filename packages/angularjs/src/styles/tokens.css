@@ -1,0 +1,59 @@
+/**
+ * FlowCanvas CSS tokens — overridable by the host. All accents, surfaces,
+ * borders, text colors, shadows funnel through these vars so a consumer
+ * can retheme without touching JS.
+ *
+ * Scope is `.flow-canvas-root` so multiple instances on the same page can
+ * coexist with different themes, and host styles outside the canvas aren't
+ * affected.
+ */
+
+.flow-canvas-root {
+	/* Light theme defaults */
+	--fc-bg:          #ffffff;
+	--fc-surface:     #ffffff;
+	--fc-surface-alt: #f7f7f7;
+	--fc-line:        #dfe1e6;
+	--fc-line-soft:   #ebecf1;
+	--fc-text:        #191e36;
+	--fc-text-body:   #5e6064;
+	--fc-muted:       #bcbdc4;
+	--fc-primary:       #0ec12f;
+	--fc-primary-dark:  #056d18;
+	--fc-primary-soft:  #d6f5db;
+	--fc-danger:      #ef4444;
+
+	--fc-radius-sm:   8px;
+	--fc-radius-md:   10px;
+	--fc-radius-lg:   12px;
+	--fc-shadow-card: 0 1px 3px rgba(15, 23, 42, .06), 0 1px 2px rgba(15, 23, 42, .04);
+	--fc-shadow-pop:  0 10px 28px rgba(0, 0, 0, .12), 0 2px 8px rgba(0, 0, 0, .06);
+
+	--fc-grid-color:  #ebecf1;
+	--fc-edge:        #94a3b8;
+	--fc-edge-active: #0ec12f;
+
+	--fc-font:        Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+	color: var(--fc-text);
+	background: var(--fc-bg);
+	font-family: var(--fc-font);
+}
+
+.flow-canvas-root[data-theme="dark"] {
+	--fc-bg:          #131729;
+	--fc-surface:     #1f2640;
+	--fc-surface-alt: #242b45;
+	--fc-line:        #2f364d;
+	--fc-line-soft:   rgba(255, 255, 255, .08);
+	--fc-text:        #e5e7eb;
+	--fc-text-body:   #b9c1d7;
+	--fc-muted:       #8892a8;
+	--fc-primary:     #34d058;
+	--fc-primary-dark:#7aeea0;
+	--fc-primary-soft:rgba(52, 208, 88, .12);
+	--fc-grid-color:  #2f364d;
+	--fc-edge:        #56595e;
+	--fc-shadow-card: 0 1px 3px rgba(0, 0, 0, .2);
+	--fc-shadow-pop:  0 16px 34px rgba(0, 0, 0, .5);
+}

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>FlowCanvas minimal — AngularJS</title>
+	<link rel="stylesheet" href="../dist/flow-canvas.css">
+	<style>
+		html, body { margin: 0; height: 100%; font-family: Inter, sans-serif; }
+		#app { height: 100vh; display: flex; }
+		flow-canvas { flex: 1 1 0; display: block; min-width: 0; }
+	</style>
+	<script src="https://unpkg.com/angular@1.8.3/angular.min.js"></script>
+	<script src="../dist/flow-canvas.umd.cjs"></script>
+</head>
+<body>
+	<div id="app" ng-app="demo" ng-controller="Editor as $ctrl">
+		<flow-canvas
+			flows="$ctrl.flows"
+			node-types="$ctrl.nodeTypes"
+			direction="horizontal"
+			theme="light"
+			snap-to-grid="true"
+			grid-size="20"
+			on-change="$ctrl.onChange(changes)"
+			on-ready="$ctrl.onReady(api)">
+		</flow-canvas>
+	</div>
+	<script>
+		FlowCanvas.initAngular('flowCanvas');
+
+		angular.module('demo', ['flowCanvas'])
+			.controller('Editor', function(){
+				var $ctrl = this;
+				$ctrl.nodeTypes = [
+					{
+						type: 'email', label: 'Send email', color: '#6366f1',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="m22 6-10 7L2 6"/></svg>',
+						inputs: [{ type: 'main' }], outputs: [{ type: 'main' }],
+						createEntity: function(){ return { type: 'email', data: { campaign: null } }; }
+					},
+					{
+						type: 'wait', label: 'Wait', color: '#f59e0b',
+						icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+						inputs: [{ type: 'main' }], outputs: [{ type: 'main' }],
+						createEntity: function(){ return { type: 'wait', data: { value: 1, unit: 'days' } }; }
+					}
+				];
+				$ctrl.flows = FlowCanvas.createFlows();
+				$ctrl.onChange = function(changes){
+					FlowCanvas.applyChanges($ctrl.flows, changes);
+					console.log('change:', changes);
+				};
+				$ctrl.onReady = function(api){ $ctrl.api = api; };
+			});
+	</script>
+</body>
+</html>
