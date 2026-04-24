@@ -70,6 +70,17 @@
 	box-shadow: var(--fc-shadow-card);
 	padding: 12px 16px;
 	min-width: 180px;
+	/* Ocupar TODO el wrapper que xyflow reserva a partir de `width/height` en
+	   FlowNode. Si la tarjeta es más corta que el wrapper, los handles (que
+	   xyflow ancla al borde del wrapper) quedan flotando lejos del card —
+	   se ve un círculo huérfano debajo del nodo. Estirar el card evita ese
+	   gap independientemente del tamaño que pida el host. */
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 	font-family: var(--fc-font);
 	transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -128,12 +139,17 @@
 	background: var(--fc-surface) !important;
 	border: 2px solid var(--fc-edge) !important;
 	border-radius: 50% !important;
-	transition: border-color 0.15s ease, transform 0.15s ease;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Hover effect via box-shadow en vez de transform — el transform colisiona
+   con `translate(-50%, -50%)` etc. que xyflow aplica por `.react-flow__handle-top/
+   left/right/bottom` para anclar el handle al borde correcto del nodo.
+   Sobrescribirlo con `scale(1.2)` deshace el anclaje y produce un salto de
+   ~4px + jitter infinito al entrar/salir el cursor. */
 .fc-handle:hover {
 	border-color: var(--fc-primary) !important;
-	transform: scale(1.2);
+	box-shadow: 0 0 0 3px var(--fc-primary-soft, rgba(14, 193, 47, 0.2));
 }
 
 .fc-handle-label {
