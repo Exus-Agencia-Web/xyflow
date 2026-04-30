@@ -595,6 +595,15 @@ function InnerFlow<TData>(props: InnerFlowProps<TData>): React.ReactElement {
 	React.useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (readOnly) return;
+			// No interceptar atajos cuando el usuario escribe en un campo editable.
+			// Esto evita que Backspace borre el nodo seleccionado mientras se edita
+			// el nombre/asunto/etc. en el sidebar.
+			const tgt = e.target as HTMLElement | null;
+			if (tgt) {
+				const tag = tgt.tagName;
+				if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+				if (tgt.isContentEditable) return;
+			}
 			if (e.key === 'Delete' || e.key === 'Backspace') {
 				const selectedNodes = nodes.filter((n) => n.selected);
 				if (selectedNodes.length > 0) {
