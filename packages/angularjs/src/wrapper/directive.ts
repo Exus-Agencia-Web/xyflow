@@ -178,12 +178,16 @@ export function registerDirective(moduleName = 'flowCanvas'): void {
 					return true;
 				});
 
-				// Deep watch on flows — sync when host mutates in place
+				// Reference watch on flows. Deep watch breaks AngularJS 1.4.6 because
+				// `flows.nodes` and `flows.edges` are ES6 Maps and angular.copy/equals
+				// don't handle Map → triggers "Method Map.prototype.forEach called on
+				// incompatible receiver" + $rootScope:infdig. Hosts that mutate in place
+				// must call api.setFlows() / dispatch a change explicitly to resync.
 				scope.$watch('flows', (newVal) => {
 					if (newVal) {
 						ce.setFlows(newVal as Parameters<FlowCanvasElement['setFlows']>[0]);
 					}
-				}, true);
+				});
 
 				// Reference watch on nodeTypes
 				scope.$watch('nodeTypes', (newVal) => {
