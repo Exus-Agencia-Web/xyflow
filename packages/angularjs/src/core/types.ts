@@ -34,6 +34,9 @@ export interface NodeTypeDef<TData = unknown> {
 	isResizable?: boolean;
 	locked?: boolean;
 	hideContextMenu?: boolean;
+	/** Si true, no se muestra en la paleta de drag pero los nodos ya creados
+	 *  con este type siguen renderizando (útil para tipos legacy/deprecated). */
+	hideFromPalette?: boolean;
 	inputs?: HandleDef[];
 	outputs?: HandleDef[];
 	defaultSize?: Size;

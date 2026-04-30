@@ -276,7 +276,7 @@ interface PaletteProps<TData> {
 }
 
 function Palette<TData>({ nodeTypes, onDragStart, title }: PaletteProps<TData>): React.ReactElement {
-	const draggableTypes = nodeTypes.filter(t => !t.isInitial);
+	const draggableTypes = nodeTypes.filter(t => !t.isInitial && !t.hideFromPalette);
 
 	return (
 		<div className="fc-palette">
