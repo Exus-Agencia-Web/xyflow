@@ -3,27 +3,45 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - develop
+      - master
+  workflow_dispatch:
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release
+  deploy:
+    name: Deploy ${{ github.ref_name }}
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - uses: ./.github/actions/ci-setup
-      - uses: ./.github/actions/ci-checks
+    timeout-minutes: 30
+    environment: ${{ github.ref_name == 'master' && 'production' || (github.ref_name == 'prerelease' && 'prerelease' || 'develop') }}
 
-      - name: Create release PR or publish to npm
-        id: changesets
-        uses: xyflow/changeset-action@v1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          publish: pnpm release
-          title: Release packages
-          commit: 'chore(packages): bump'
+          fetch-depth: 0
+
+      - name: Install rsync
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y rsync
+
+      - name: Run release
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          AWS1_SSH_KEY: ${{ secrets.AWS1_SSH_KEY }}
+          GH_BEFORE: ${{ github.event.before }}
+          USE_GH_BEFORE: ${{ secrets.USE_GH_BEFORE }}
+          COMMITSDEPTH: ${{ secrets.COMMITSDEPTH }}
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop)    TARGET=develop ;;
+            master)     TARGET=production ;;
+            *)
+              echo "Rama ${GITHUB_REF_NAME} no mapea a ningún ambiente" >&2
+              exit 1
+              ;;
+          esac
+          bash scripts/release.sh "$TARGET"
